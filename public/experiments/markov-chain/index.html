@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Markov Chain Generator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f9f8f5;
+    --surface: #ffffff;
+    --surface-2: #f1f0ec;
+    --text: #1a1a18;
+    --text-2: #6b6a65;
+    --text-3: #a09f9a;
+    --border: rgba(0,0,0,0.1);
+    --border-md: rgba(0,0,0,0.18);
+    --radius: 8px;
+    --radius-lg: 12px;
+    --font-sans: 'DM Sans', system-ui, sans-serif;
+    --font-serif: Georgia, 'Times New Roman', serif;
+    --font-mono: 'DM Mono', 'Fira Mono', monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111110;
+      --surface: #1c1c1a;
+      --surface-2: #242422;
+      --text: #e8e7e3;
+      --text-2: #9a9990;
+      --text-3: #5a5955;
+      --border: rgba(255,255,255,0.08);
+      --border-md: rgba(255,255,255,0.14);
+    }
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 40px 24px 60px;
+  }
+
+  .container {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  header {
+    margin-bottom: 32px;
+  }
+
+  h1 {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    font-size: 28px;
+    font-weight: 400;
+    font-family: var(--font-serif);
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .subtitle em {
+    color: var(--text-2);
+    font-style: italic;
+  }
+
+  section {
+    margin-bottom: 20px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 8px;
+  }
+
+  .preset-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  .preset-btn {
+    font-size: 12px;
+    font-family: var(--font-sans);
+    padding: 5px 12px;
+    border: 0.5px solid var(--border-md);
+    border-radius: 20px;
+    background: transparent;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+
+  .preset-btn:hover {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+
+  textarea {
+    width: 100%;
+    font-size: 13px;
+    line-height: 1.65;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--font-mono);
+    resize: vertical;
+    min-height: 150px;
+    transition: border-color 0.15s;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: var(--border-md);
+  }
+
+  textarea::placeholder {
+    color: var(--text-3);
+  }
+
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .ctrl-card {
+    background: var(--surface-2);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+
+  .ctrl-card label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 10px;
+  }
+
+  .ctrl-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .ctrl-row input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--border-md);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  .ctrl-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--text);
+    cursor: pointer;
+  }
+
+  .ctrl-val {
+    font-size: 16px;
+    font-weight: 500;
+    min-width: 32px;
+    text-align: right;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gen-btn {
+    width: 100%;
+    padding: 12px;
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.12s;
+    letter-spacing: 0.02em;
+  }
+
+  .gen-btn:hover {
+    background: var(--surface-2);
+  }
+
+  .gen-btn:active {
+    transform: scale(0.99);
+  }
+
+  .output-wrap {
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px 26px;
+    background: var(--surface);
+    min-height: 140px;
+  }
+
+  .output-text {
+    font-size: 15px;
+    line-height: 1.9;
+    color: var(--text);
+    font-family: var(--font-serif);
+  }
+
+  .empty {
+    color: var(--text-3);
+    font-size: 13px;
+    font-style: italic;
+    font-family: var(--font-serif);
+  }
+
+  .stats {
+    display: flex;
+    gap: 20px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    font-size: 11px;
+    color: var(--text-3);
+    letter-spacing: 0.04em;
+  }
+
+  .stat span {
+    color: var(--text-2);
+    font-weight: 500;
+  }
+
+  @media (max-width: 480px) {
+    .controls { grid-template-columns: 1fr; }
+    .subtitle { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>text generator</h1>
+    <p class="subtitle">Markov Chain — <em>order n word prediction</em></p>
+  </header>
+
+  <section>
+    <p class="section-label">seed text</p>
+    <div class="preset-row">
+      <button class="preset-btn" onclick="loadPreset('irritant')">irritant</button>
+      <button class="preset-btn" onclick="loadPreset('cosmic')">cosmic drift</button>
+      <button class="preset-btn" onclick="loadPreset('market')">market noise</button>
+    </div>
+    <textarea id="seed" placeholder="Paste your source text here — the longer, the stranger the output..."></textarea>
+  </section>
+
+  <section>
+    <div class="controls">
+      <div class="ctrl-card">
+        <label>chain order (n-gram lookback)</label>
+        <div class="ctrl-row">
+          <input type="range" id="order" min="1" max="4" value="2" step="1">
+          <span class="ctrl-val" id="order-val">2</span>
+        </div>
+      </div>
+      <div class="ctrl-card">
+        <label>output length (words)</label>
+        <div class="ctrl-row">
+          <input type="range" id="length" min="30" max="400" value="120" step="10">
+          <span class="ctrl-val" id="length-val">120</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <button class="gen-btn" onclick="generate()">generate ↗</button>
+  </section>
+
+  <section>
+    <div class="output-wrap">
+      <div id="output" class="empty">waiting for input...</div>
+    </div>
+    <div class="stats" id="stats" style="display:none">
+      <div class="stat">corpus words: <span id="s-corpus">—</span></div>
+      <div class="stat">unique states: <span id="s-states">—</span></div>
+      <div class="stat">avg. transitions: <span id="s-trans">—</span></div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+const presets = {
+  irritant: `In something of red lived an irritant. Safe from the blue from the irr. And this truck went in it. Safe. Something of red in it back to the blue to the red. This truck and something extra. Listen. The nearby something extras in front of the truck. The man in front of the truck trampled from front to back safe from the blue. And all this while the man scooped shovels of dirt and trampled from front to back front to back. The other and the clay sighed for something of red. The irritant lay in something of red and laughed. Back to this truck went it irr. No said not back to it in front of it. From the clay the red sighed no. So the truck never felt the flung and flung dirt in the morning. The trampling man and the earth flung and flung the girth of the earth and the man safe from the red said my girth is something extra. The red and the blue the blue. So back to this truck went it irr. Not back to something of red and the irritant. The irritant living in something of red said not back to the blue and the truck okay. Sighing and sighing the red sighed and sighed in other words. So in something of red lived the irritant while the irr irrd in front of the truck. The irr irrd the irritant. The blue and the clay and the heart of the worm. No said. Not any of this said the front and the back and the familiar earth beneath the clay.`,
+  cosmic: `The galaxy folds. A star remembers its birth and forgets. The light arrives forty thousand years too late to matter. We count the seconds. We count the stars. The void expands between every particle every silence. A small animal on a small rock watches the large dark with its small bright eyes. Nothing answers. The rock moves. The animal blinks. The galaxy folds again in a different direction. The counting continues. We were here. The light left. We are still here. The dark is patient and old and does not mind. The star remembers nothing now. The void does not count. The small animal is gone but the small bright eyes remain somewhere in the fold somewhere in the direction the light left.`,
+  market: `The bid asks and the spread widens. Volume thin at the open. Sellers absorb the bid. The offer lifted twice before noon. Rotation into defensives ongoing. The tape printed lower highs. Momentum diverges from price at the level. Smart money exits the rally. The ask fades. Liquidity exits the midpoint. The close prints below the open. Rotation ongoing. The spread asks and the bid widens. Volume thick at the close. Buyers lift the offer. The tape printed lower. Momentum diverges. The market asks. No one answers. The level holds or breaks. Smart money already gone. The open prints above the close and the spread widens and the bid asks again.`
+};
+
+function loadPreset(key) {
+  document.getElementById('seed').value = presets[key];
+}
+
+document.getElementById('order').addEventListener('input', function() {
+  document.getElementById('order-val').textContent = this.value;
+});
+document.getElementById('length').addEventListener('input', function() {
+  document.getElementById('length-val').textContent = this.value;
+});
+
+function buildChain(words, order) {
+  const chain = {};
+  for (let i = 0; i < words.length - order; i++) {
+    const key = words.slice(i, i + order).join(' ');
+    const next = words[i + order];
+    if (!chain[key]) chain[key] = [];
+    chain[key].push(next);
+  }
+  return chain;
+}
+
+function pickRandom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function generate() {
+  const raw = document.getElementById('seed').value.trim();
+  if (!raw) {
+    document.getElementById('output').className = 'empty';
+    document.getElementById('output').textContent = 'paste some seed text first.';
+    return;
+  }
+
+  const order = parseInt(document.getElementById('order').value);
+  const length = parseInt(document.getElementById('length').value);
+  const words = raw.split(/\s+/).filter(w => w.length > 0);
+
+  if (words.length < order + 2) {
+    document.getElementById('output').className = 'empty';
+    document.getElementById('output').textContent = 'seed text too short for this order.';
+    return;
+  }
+
+  const chain = buildChain(words, order);
+  const keys = Object.keys(chain);
+
+  const startKeys = keys.filter(k => {
+    const first = k.split(' ')[0];
+    return first[0] === first[0].toUpperCase();
+  });
+
+  let startKey = startKeys.length > 0 ? pickRandom(startKeys) : pickRandom(keys);
+  let current = startKey.split(' ');
+  const result = [...current];
+
+  for (let i = 0; i < length - order; i++) {
+    const key = result.slice(-order).join(' ');
+    const nexts = chain[key];
+    if (!nexts || nexts.length === 0) {
+      result.push(pickRandom(keys).split(' ')[0]);
+      continue;
+    }
+    result.push(pickRandom(nexts));
+  }
+
+  const outputEl = document.getElementById('output');
+  outputEl.className = 'output-text';
+  outputEl.textContent = result.join(' ');
+
+  const uniqueStates = keys.length;
+  const totalTrans = Object.values(chain).reduce((s, v) => s + v.length, 0);
+  const avgTrans = (totalTrans / uniqueStates).toFixed(1);
+
+  document.getElementById('s-corpus').textContent = words.length.toLocaleString();
+  document.getElementById('s-states').textContent = uniqueStates.toLocaleString();
+  document.getElementById('s-trans').textContent = avgTrans;
+  document.getElementById('stats').style.display = 'flex';
+}
+</script>
+</body>
+</html>
