@@ -20,4 +20,6 @@ export type ExperimentFrontmatter = {
   stack: string[];
   href: string;
   thumb?: string;
+  /** If set, clicking the card opens this URL in a modal iframe instead of navigating away */
+  iframeSrc?: string;
 };

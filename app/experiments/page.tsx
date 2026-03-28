@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ExperimentCard } from "@/app/components/ExperimentCard";
+import { ExperimentsGrid } from "@/app/components/ExperimentsGrid";
 import { getAllExperiments } from "@/lib/experiments";
 import { site } from "@/lib/site";
 
@@ -27,10 +27,8 @@ export default function ExperimentsPage() {
         Smaller builds, technical play, and ideas that might graduate into
         product work.
       </p>
-      <div className="mt-16 flex flex-col gap-6">
-        {experiments.map((exp) => (
-          <ExperimentCard key={exp.slug} experiment={exp} />
-        ))}
+      <div className="mt-16">
+        <ExperimentsGrid experiments={experiments} />
       </div>
     </div>
   );
